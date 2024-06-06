@@ -1,10 +1,10 @@
-import { SignIn, SignUp } from "../components";
+import { SignIn } from "../components";
 export const Authentication = () => {
 
   return (
     <>
       <div className="auth-container h-full flex items-center justify-center">
-        <SignIn/>
+        <SignIn />
       </div>
     </>
 
