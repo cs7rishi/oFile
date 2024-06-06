@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom"
-import "../css/main.css"
 export const Landing = () => {
   return (
     <>
