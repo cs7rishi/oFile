@@ -22,9 +22,4 @@ public class FileEntity {
     String fileName;
     @Column(name="file_url")
     String fileUrl;
-
-    public FileEntity(String fileUrl) {
-        this.fileUrl = fileUrl;
-        this.fileName = fileUrl;
-    }
 }
