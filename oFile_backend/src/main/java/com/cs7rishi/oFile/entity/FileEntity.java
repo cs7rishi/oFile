@@ -13,7 +13,7 @@ import lombok.Setter;
 public class FileEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="id")
     Long id;
     @Column(name="user_id")
