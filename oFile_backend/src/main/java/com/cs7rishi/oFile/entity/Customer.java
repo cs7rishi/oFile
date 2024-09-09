@@ -1,12 +1,14 @@
 package com.cs7rishi.oFile.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
-@Getter
-@Setter
+@Table(name = "users")
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,4 +22,10 @@ public class Customer {
 
     @Column(name="create_dt")
     private String createDt;
+
+    public Customer(String email, String pwd, String role) {
+        this.email = email;
+        this.pwd = pwd;
+        this.role = role;
+    }
 }
