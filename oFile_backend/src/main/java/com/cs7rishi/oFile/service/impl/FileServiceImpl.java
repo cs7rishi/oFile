@@ -20,10 +20,8 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public boolean add(FileDto fileDto) throws IOException, URISyntaxException {
-        System.out.println("Downloading started");
-
-//        FileEntity file = new FileEntity();
-//        fileRepository.save(file);
+        //Todo Add file against User
+        //Todo Download file
         downloaderService.downloadFile(fileDto);
         return true;
     }
@@ -36,11 +34,6 @@ public class FileServiceImpl implements FileService {
         } catch (Exception ex) {
             System.out.println("Error while delete file from DB");
         }
-    }
-
-    @Override
-    public void download() {
-
     }
 
     @Override

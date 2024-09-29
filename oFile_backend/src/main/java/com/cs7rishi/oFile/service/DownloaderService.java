@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 public interface DownloaderService {
-    boolean downloadFile(FileDto fileModel) throws IOException, URISyntaxException;
+    boolean downloadFile(FileDto fileDto) throws IOException, URISyntaxException;
 
     boolean deleteFile(String fileId);
 }
