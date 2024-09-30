@@ -1,8 +1,16 @@
 package com.cs7rishi.oFile.controller;
 
 import com.cs7rishi.oFile.dto.FileDto;
+import com.cs7rishi.oFile.entity.Customer;
+import com.cs7rishi.oFile.entity.FileEntity;
+import com.cs7rishi.oFile.repository.CustomerRepository;
+import com.cs7rishi.oFile.repository.FileRepository;
 import com.cs7rishi.oFile.service.FileService;
+import com.cs7rishi.oFile.utils.AuthorizationUtils;
+import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -22,6 +30,12 @@ import java.util.concurrent.Executors;
 public class FileController {
 
     @Autowired
+    CustomerRepository customerRepository;
+
+    @Autowired
+    FileRepository fileRepository;
+
+    @Autowired
     FileService fileService;
 
     @PostMapping("/add")
@@ -37,17 +51,11 @@ public class FileController {
     }
 
     @GetMapping("/list")
-    public List<FileDto> list(){
-        FileDto fileDto1 =
-            FileDto.builder().id(1L).fileName("Report.pdf").fileType("PDF").progress(60)
-                .fileUrl("fileUrl1").build();
-        FileDto fileDto2 =
-            FileDto.builder().id(2L).fileName("Image.png").fileType("PNG").progress(20)
-                .fileUrl("fileUrl2").build();
-        FileDto fileDto3 =
-            FileDto.builder().id(1L).fileName("Presentation.pptx").fileType("PPTX").progress(80)
-                .fileUrl("fileUrl1").build();
-        return List.of(fileDto1,fileDto2,fileDto3);
+    public List<FileEntity> list(){
+        String email = AuthorizationUtils.getUserEmail();
+        Customer customer = customerRepository.findByEmail(email).get(0);
+        List<FileEntity> files = fileRepository.findByCustomer(customer);
+        return files;
     }
     @GetMapping("/status")
     public SseEmitter status(@RequestParam(value = "email" , required = false) String email) {

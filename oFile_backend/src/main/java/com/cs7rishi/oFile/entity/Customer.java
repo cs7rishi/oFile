@@ -3,6 +3,8 @@ package com.cs7rishi.oFile.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Entity
 @Table(name = "users")
 @Data
