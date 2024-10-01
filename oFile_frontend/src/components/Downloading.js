@@ -51,7 +51,7 @@ export const Downloading = () => {
 
   return (
     <>
-      <div>Downloads</div>
+      <div>Downloading</div>
       {files && files.map((file,index) => (
         <File key={index} fileName={file.fileName} downloadedSize={file.downloadedSize} progress={file.progress} fileSize={file.fileSize}/>
       ))}

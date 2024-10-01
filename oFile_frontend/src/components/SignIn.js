@@ -1,5 +1,7 @@
-import {URLConstants} from "../constants/URLConstants";
+import { URLConstants } from "../constants/URLConstants";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { NotificationConstant } from "../contansts/NotificationConstant";
 
 export const SignIn = () => {
 
@@ -20,11 +22,12 @@ export const SignIn = () => {
           Authorization: `Basic ${encodedCredentials}`,
         },
       });
-      console.log(response.status)  
-      if(response.status === 200){
+      console.log(response.status)
+      if (response.status === 200) {
         window.sessionStorage.setItem("Authorization", response.headers.get('Authorization'));
+        toast.success(NotificationConstant.LOGIN_SUCCESS);
         navigate("/dashboard")
-      }    
+      }
 
     } catch (error) {
       console.log(error)
