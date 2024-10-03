@@ -3,6 +3,7 @@ package com.cs7rishi.oFile.controller;
 import com.cs7rishi.oFile.dto.FileDto;
 import com.cs7rishi.oFile.entity.Customer;
 import com.cs7rishi.oFile.entity.FileEntity;
+import com.cs7rishi.oFile.model.response.GenericResponse;
 import com.cs7rishi.oFile.repository.CustomerRepository;
 import com.cs7rishi.oFile.repository.FileRepository;
 import com.cs7rishi.oFile.service.FileService;
@@ -39,23 +40,18 @@ public class FileController {
     FileService fileService;
 
     @PostMapping("/add")
-    public String add(@RequestBody FileDto fileDto) throws IOException, URISyntaxException {
-        fileService.add(fileDto);
-        return "File added successfully";
+    public GenericResponse<?> add(@RequestBody FileDto fileDto) throws IOException, URISyntaxException {
+        return fileService.add(fileDto);
     }
 
     @GetMapping("/delete")
-    public String delete(@RequestParam("fileId") String fileId) {
-        fileService.delete(fileId);
-        return "File deleted successfully";
+    public GenericResponse<?> delete(@RequestParam("fileId") String fileId) {
+        return fileService.delete(fileId);
     }
 
     @GetMapping("/list")
-    public List<FileEntity> list(){
-        String email = AuthorizationUtils.getUserEmail();
-        Customer customer = customerRepository.findByEmail(email).get(0);
-        List<FileEntity> files = fileRepository.findByCustomer(customer);
-        return files;
+    public GenericResponse<?> list(){
+        return fileService.list();
     }
     @GetMapping("/status")
     public SseEmitter status(@RequestParam(value = "email" , required = false) String email) {
