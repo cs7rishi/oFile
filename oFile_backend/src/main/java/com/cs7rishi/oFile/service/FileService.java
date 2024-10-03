@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 public interface FileService {
-    GenericResponse<?> add(FileDto fileDto) throws IOException, URISyntaxException;
+    GenericResponse<?> add(FileDto fileDto);
     GenericResponse<?> delete(String fileId);
     GenericResponse<?> list();
     SseEmitter status();
