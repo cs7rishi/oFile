@@ -53,60 +53,9 @@ public class FileController {
     public GenericResponse<?> list(){
         return fileService.list();
     }
+
     @GetMapping("/status")
     public SseEmitter status(@RequestParam(value = "email" , required = false) String email) {
-        FileDto fileDto1 =
-            FileDto.builder().id(1L).fileName("Report.pdf").progress(60).progress(0)
-                .fileSize(560).downloadedSize(0).build();
-        FileDto fileDto2 =
-            FileDto.builder().id(2L).fileName("Image.png").progress(20).progress(0)
-                .fileSize(230).downloadedSize(0).build();
-
-        ArrayList<FileDto> fileList = new ArrayList<>();
-        fileList.add(fileDto1);
-        fileList.add(fileDto2);
-        SseEmitter emitter = new SseEmitter();
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(() -> {
-            try {
-                for (int i = 0; true; i++) {
-                    SseEmitter.SseEventBuilder event =
-                        SseEmitter.event().data(updateFiles(fileList))
-                            .id(String.valueOf(i)).name("message");
-                    emitter.send(event);
-                    Thread.sleep(3000);
-                    if(i == 10) break;
-                }
-                emitter.complete();
-            } catch (Exception ex) {
-                emitter.completeWithError(ex);
-            }
-        });
-        return emitter;
-    }
-
-    private List<FileDto> updateFiles(ArrayList<FileDto> fileList) {
-        fileList.forEach(file -> {
-            file.setDownloadedSize(Math.min(file.getFileSize(),
-                generateRandomIntegerInRange(file.getDownloadedSize(), file.getFileSize())));
-            file.setProgress(calculateProgress(file.getDownloadedSize(),file.getFileSize()));
-        });
-
-        return fileList;
-    }
-
-    private int calculateProgress(int downloadedData,int totalData){
-        if (totalData == 0) {
-            return 0; // Avoid division by zero
-        }
-
-        double progressPercentage = (downloadedData * 100.0) / totalData;
-        return (int) progressPercentage;
-    }
-
-    private Integer generateRandomIntegerInRange(int min, int max) {
-        int newMax = Math.min(min+5, max);
-        Random random = new Random();
-        return random.nextInt(newMax) + min;
+        return fileService.status();
     }
 }
