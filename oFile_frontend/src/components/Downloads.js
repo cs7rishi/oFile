@@ -3,12 +3,14 @@ import { URLConstants } from '../constants/URLConstants';
 import { File } from './File';
 import { Description, Dialog, DialogPanel, DialogTitle } from '@headlessui/react'
 import toast from 'react-hot-toast';
+import { getStorage } from '../utils';
+import { Constants } from '../constants';
 
 export const Downloads = () => {
   const [files, setFile] = useState([]);
   let [isOpen, setIsOpen] = useState(false)
 
-  const handleDownload = async e => {
+  const handleFileAdd = async e => {
     e.preventDefault();
     const fileName = e.target.fileName.value;
     const fileUrl = e.target.fileUrl.value;
@@ -16,8 +18,9 @@ export const Downloads = () => {
     console.log(fileName + "  " + fileUrl);
 
     try {
-      let authorization = sessionStorage.getItem('Authorization');
+      let authorization = getStorage(Constants.AUTHORIZATION);
       if (authorization === null || authorization === undefined) {
+        //Todo abstract the same to a hook
         alert('The property is not found in local storage.');
       } else {
         const response = await fetch(URLConstants.BASE_URL + URLConstants.FILE_ADD_ENDPOINT, {
@@ -90,7 +93,7 @@ export const Downloads = () => {
                 <span className="sr-only">Close modal</span>
               </button>
             </div>
-            <form className="p-4 md:p-5" onSubmit={handleDownload}>
+            <form className="p-4 md:p-5" onSubmit={handleFileAdd}>
               <div className="grid gap-4 mb-4 grid-cols-2">
                 <div className="col-span-2">
                   <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">File Name</label>
@@ -121,9 +124,9 @@ export const Downloads = () => {
 
       </div>
 
-      {files && files.map((file,index) => (
+      {/* {files && files.map((file,index) => (
         <File key={index} fileName={file.fileName} downloadedSize={file.downloadedSize} progress={file.progress} fileSize={file.fileSize}/>
-      ))}
+      ))} */}
     </>
   )
 }

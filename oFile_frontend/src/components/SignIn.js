@@ -1,12 +1,11 @@
-import { URLConstants } from "../constants/URLConstants";
 import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
-import { NotificationConstant } from "../contansts/NotificationConstant";
+import { URLConstants, Constants } from "../constants";
+import { setStorage, triggerNotification } from "../utils";
 
 export const SignIn = () => {
-
   const navigate = useNavigate();
-  function handleSubmit(e) {
+
+  const handleSubmit = (e) => {
     e.preventDefault();
     const email = e.target.email.value;
     const password = e.target.password.value
@@ -22,10 +21,11 @@ export const SignIn = () => {
           Authorization: `Basic ${encodedCredentials}`,
         },
       });
-      console.log(response.status)
       if (response.status === 200) {
-        window.sessionStorage.setItem("Authorization", response.headers.get('Authorization'));
-        toast.success(NotificationConstant.LOGIN_SUCCESS);
+        const data = await response.json();
+        setStorage(Constants.AUTHORIZATION, response.headers.get(Constants.AUTHORIZATION))
+        console.log(data);
+        triggerNotification(data.response)
         navigate("/dashboard")
       }
 

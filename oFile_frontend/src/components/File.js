@@ -38,28 +38,5 @@ export const File = ({ fileName, downloadedSize, progress, fileSize }) => {
         </div>
       </div>
     </>
-    // <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-md mb-4">
-    //   <div className="flex-1">
-    //     <h3 className="text-lg font-semibold">{fileName}</h3>
-    //     <p className="text-sm text-gray-500">{fileType}</p>
-    //   </div>
-    //   <div className="flex-1 mx-4">
-    //     <div className="relative pt-1">
-    //       <div className="flex mb-2 items-center justify-between">
-    //         <div>
-    //           <span className="text-xs font-semibold inline-block text-teal-600 uppercase">
-    //             {progress}%
-    //           </span>
-    //         </div>
-    //       </div>
-    //       <div className="flex h-2 mb-2 overflow-hidden text-xs bg-gray-200 rounded">
-    //         <div
-    //           style={{ width: `${progress}%` }}
-    //           className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-teal-600"
-    //         />
-    //       </div>
-    //     </div>
-    //   </div>
-    // </div>
   )
 }

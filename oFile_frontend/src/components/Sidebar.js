@@ -1,13 +1,13 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
+import { clearStorage } from '../utils/StorageUtils'
 
 export const Sidebar = () => {
     const navigate = useNavigate();
     const logout = () => {
-        window.sessionStorage.clear();
         try {
-
+            clearStorage();
             navigate("/login")
         } catch (ex) {
             console.log(ex)
