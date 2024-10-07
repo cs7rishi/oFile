@@ -4,14 +4,20 @@ import com.cs7rishi.oFile.constants.ResponseConstant;
 import com.cs7rishi.oFile.dto.FileDto;
 import com.cs7rishi.oFile.entity.Customer;
 import com.cs7rishi.oFile.entity.FileEntity;
+import com.cs7rishi.oFile.exception.OFileException;
+import com.cs7rishi.oFile.model.request.StreamRequest;
 import com.cs7rishi.oFile.model.response.GenericResponse;
+import com.cs7rishi.oFile.model.response.StreamResponse;
 import com.cs7rishi.oFile.repository.CustomerRepository;
 import com.cs7rishi.oFile.repository.FileRepository;
 import com.cs7rishi.oFile.service.DownloaderService;
 import com.cs7rishi.oFile.service.FileService;
 import com.cs7rishi.oFile.utils.ApiResponseUtil;
 import com.cs7rishi.oFile.utils.AuthorizationUtils;
+import com.cs7rishi.oFile.utils.FileUtils;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -21,14 +27,24 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.cs7rishi.oFile.utils.FileUtils.calculatePercentage;
+import static com.cs7rishi.oFile.utils.FileUtils.convertMBtoBytes;
+
+
 @Service
 public class FileServiceImpl implements FileService {
+    @Value("${oFile.fileSizeLimit}")
+    private long fileSizeLimitMB;
     @Autowired
     CustomerRepository customerRepository;
     @Autowired
+    DownloaderService downloaderService;
+    @Autowired
     FileRepository fileRepository;
     @Autowired
-    DownloaderService downloaderService;
+    DownloadProgressCacheService progressCacheService;
+    @Autowired
+    ModelMapper modelMapper;
 
     /**
      * This method creates the new file, add it in the DB
@@ -37,17 +53,18 @@ public class FileServiceImpl implements FileService {
      * @return Success or Failure Response
      */
     @Override
-    public GenericResponse<?> add(FileDto fileDto){
-        fileRepository.save(createFileEntityForAuthorisedUser(fileDto));
-        //Todo
-        //downloaderService.downloadFile(fileDto);
-        return ApiResponseUtil.success(null, ResponseConstant.FILE_ADD_SUCCESS, ResponseConstant.EMPTY);
+    public GenericResponse<?> add(FileDto fileDto) throws OFileException {
+        validateAndPersistFile(fileDto);
+        downloaderService.downloadFile(fileDto);
+        return ApiResponseUtil.success(fileDto, ResponseConstant.FILE_ADD_SUCCESS,
+            ResponseConstant.EMPTY);
     }
 
     @Override
-    public GenericResponse<?> delete(String fileId) {
+    public GenericResponse<?> delete(Long fileId) {
         try {
-            fileRepository.deleteById(Long.parseLong(fileId));
+            //Todo add customer validation
+            fileRepository.deleteById(fileId);
             downloaderService.deleteFile(fileId);
         } catch (Exception ex) {
             System.out.println("Error while delete file from DB");
@@ -57,33 +74,37 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public GenericResponse<?> list() {
-        List<FileEntity> files = extractFileForAuthorisedUser();
+        List<FileEntity> files = getFileForAuthenticatedUser();
         return ApiResponseUtil.success(files,ResponseConstant.EMPTY,ResponseConstant.EMPTY);
     }
 
     @Override
-    public SseEmitter status() {
-        FileDto fileDto1 =
-            FileDto.builder().id(1L).fileName("Report.pdf").progress(60).progress(0)
-                .fileSize(560).downloadedSize(0).build();
-        FileDto fileDto2 =
-            FileDto.builder().id(2L).fileName("Image.png").progress(20).progress(0)
-                .fileSize(230).downloadedSize(0).build();
-
-        ArrayList<FileDto> fileList = new ArrayList<>();
-        fileList.add(fileDto1);
-        fileList.add(fileDto2);
+    public SseEmitter stream(StreamRequest streamRequest) {
+//        FileDto fileDto1 =
+//            FileDto.builder().id(1L).fileName("Report.pdf").progress(60).progress(0)
+//                .fileSize(560L).downloadedSize(0L).build();
+//        FileDto fileDto2 =
+//            FileDto.builder().id(2L).fileName("Image.png").progress(20).progress(0)
+//                .fileSize(230L).downloadedSize(0L).build();
+//
+//        ArrayList<FileDto> fileList = new ArrayList<>();
+//        fileList.add(fileDto1);
+//        fileList.add(fileDto2);
         SseEmitter emitter = new SseEmitter();
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.execute(() -> {
             try {
                 for (int i = 0; true; i++) {
+                    StreamResponse streamResponse = createStreamResponse(streamRequest);
+                    if(streamResponse.getFiles().isEmpty()){
+                        break;
+                    }
+
                     SseEmitter.SseEventBuilder event =
-                        SseEmitter.event().data(updateFiles(fileList))
+                        SseEmitter.event().data(streamResponse)
                             .id(String.valueOf(i)).name("message");
                     emitter.send(event);
                     Thread.sleep(3000);
-                    if(i == 10) break;
                 }
                 emitter.complete();
             } catch (Exception ex) {
@@ -93,17 +114,58 @@ public class FileServiceImpl implements FileService {
         return emitter;
     }
 
-    private FileEntity createFileEntityForAuthorisedUser(FileDto fileDto){
-        String email = getAuthorisedUser().getEmail();
-        Customer customer = customerRepository.findByEmail(email).get(0);
-        return FileDto.createEntity(fileDto,email,customer);
+    private StreamResponse createStreamResponse(StreamRequest streamRequest){
+        StreamResponse streamResponse = new StreamResponse();
+        List<FileDto> fileDtoList = new ArrayList<>();
+        streamRequest.getIds().forEach((fileId) -> {
+
+            int progress = progressCacheService.getFileProgress(fileId);
+            if (progress == 100) {
+                progressCacheService.deleteFileProgress(fileId);
+            }
+            if (progress != -1) {
+                FileDto fileDto = FileDto.builder().id(fileId).progress(progress).build();
+                fileDtoList.add(fileDto);
+            }
+        });
+        streamResponse.setFiles(fileDtoList);
+        return streamResponse;
     }
 
-    private List<FileEntity> extractFileForAuthorisedUser(){
-        return fileRepository.findByCustomer(getAuthorisedUser());
+    private void validateAndPersistFile(FileDto fileDto) throws OFileException {
+        validateFile(fileDto);
+        createAndSaveFile(fileDto);
     }
 
-    private Customer getAuthorisedUser(){
+    private void validateFile(FileDto fileDto) throws OFileException {
+        if(!isFileSizeValid(fileDto)){
+            throw new OFileException("File is to Big");
+        }
+    }
+
+    private void createAndSaveFile(FileDto fileDto){
+        FileEntity fileEntity = createFileEntity(fileDto);
+        fileEntity = fileRepository.save(fileEntity);
+        //Todo add a model mapper here
+        fileDto.setId(fileEntity.getId());
+        fileDto.setProgress(fileEntity.getProgress());
+    }
+
+    private boolean isFileSizeValid(FileDto fileDto) throws OFileException {
+        long fileSize = FileUtils.getFileSize(fileDto);
+        return fileSize <= convertMBtoBytes(fileSizeLimitMB);
+    }
+
+    private FileEntity createFileEntity(FileDto fileDto) {
+        Customer customer = getAuthorisedCustomer();
+        return FileDto.createEntity(fileDto, customer);
+    }
+
+    private List<FileEntity> getFileForAuthenticatedUser(){
+        return fileRepository.findByCustomer(getAuthorisedCustomer());
+    }
+
+    private Customer getAuthorisedCustomer(){
         String email = AuthorizationUtils.getUserEmail();
         return customerRepository.findByEmail(email).get(0);
     }
@@ -112,7 +174,7 @@ public class FileServiceImpl implements FileService {
         fileList.forEach(file -> {
             file.setDownloadedSize(Math.min(file.getFileSize(),
                 generateRandomIntegerInRange(file.getDownloadedSize(), file.getFileSize())));
-            file.setProgress(calculateProgress(file.getDownloadedSize(),file.getFileSize()));
+            file.setProgress(calculatePercentage(file.getDownloadedSize(),file.getFileSize()));
         });
 
         return fileList;
@@ -127,10 +189,10 @@ public class FileServiceImpl implements FileService {
         return (int) progressPercentage;
     }
 
-    private Integer generateRandomIntegerInRange(int min, int max) {
-        int newMax = Math.min(min+5, max);
+    private Long generateRandomIntegerInRange(long min, long max) {
+        long newMax = Math.min(min+5L, max);
         Random random = new Random();
-        return random.nextInt(newMax) + min;
+        return random.nextLong(newMax) + min;
     }
 
 

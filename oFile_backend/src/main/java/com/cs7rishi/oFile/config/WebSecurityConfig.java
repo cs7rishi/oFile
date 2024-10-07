@@ -47,15 +47,10 @@ public class WebSecurityConfig {
                 requests
                     .requestMatchers("/file/list").authenticated()
                     .requestMatchers("/public/**").permitAll()
-                    .requestMatchers("/file/status").permitAll()
+                    .requestMatchers("/file/stream").permitAll()
                     .anyRequest().authenticated();
             })
             .httpBasic(Customizer.withDefaults()) // Enable HTTP Basic Authentication with default settings
             .build();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder();
     }
 }
