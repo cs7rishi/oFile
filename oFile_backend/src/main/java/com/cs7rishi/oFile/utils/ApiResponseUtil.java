@@ -1,10 +1,8 @@
 package com.cs7rishi.oFile.utils;
 
-import com.cs7rishi.oFile.model.OFileResponse;
+import com.cs7rishi.oFile.model.ResponseStatus;
 import com.cs7rishi.oFile.model.response.GenericResponse;
 import org.springframework.http.HttpStatus;
-
-import java.util.Optional;
 
 public class ApiResponseUtil {
     public static <T> GenericResponse<T> success(T data, String msg, String description) {
@@ -19,9 +17,9 @@ public class ApiResponseUtil {
             .data(data)
             .build();
     }
-    private static OFileResponse generateOFileResponse(HttpStatus httpStatus, String msg,
+    private static ResponseStatus generateOFileResponse(HttpStatus httpStatus, String msg,
         String description) {
-        return OFileResponse.builder()
+        return ResponseStatus.builder()
             .status(httpStatus.value())
             .description(description)
             .msg(msg)
