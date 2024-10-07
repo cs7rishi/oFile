@@ -13,18 +13,19 @@ public class FileDto {
     String fileName;
     String fileUrl;
     String fileType;
-    Integer fileSize;
-    Integer downloadedSize;
+    Long fileSize;
+    Long downloadedSize;
     //speed in MBps
     Integer speed;
     Integer progress;
 
 
-    public static FileEntity createEntity(FileDto fileDto, String email, Customer customer){
+    public static FileEntity createEntity(FileDto fileDto, Customer customer){
         return FileEntity.builder()
-            .userEmail(email)
+            .userEmail(customer.getEmail())
             .fileName(fileDto.fileName)
             .fileUrl(fileDto.fileUrl)
+            .progress(0)
             .customer(customer)
             .build();
     }

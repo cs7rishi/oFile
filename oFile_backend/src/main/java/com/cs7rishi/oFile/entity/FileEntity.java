@@ -21,6 +21,10 @@ public class FileEntity {
     String fileName;
     @Column(name="file_url")
     String fileUrl;
+    @Column(name="file_size")
+    Long fileSize;
+    @Column(name="progress")
+    Integer progress;
     @ManyToOne
     Customer customer;
 }

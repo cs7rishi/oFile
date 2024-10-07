@@ -5,7 +5,7 @@ import lombok.*;
 @Data
 @Builder
 @AllArgsConstructor
-public class OFileResponse {
+public class ResponseStatus {
     int status;
     String msg;
     String description;
