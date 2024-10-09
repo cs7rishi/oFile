@@ -80,16 +80,6 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public SseEmitter stream(StreamRequest streamRequest) {
-//        FileDto fileDto1 =
-//            FileDto.builder().id(1L).fileName("Report.pdf").progress(60).progress(0)
-//                .fileSize(560L).downloadedSize(0L).build();
-//        FileDto fileDto2 =
-//            FileDto.builder().id(2L).fileName("Image.png").progress(20).progress(0)
-//                .fileSize(230L).downloadedSize(0L).build();
-//
-//        ArrayList<FileDto> fileList = new ArrayList<>();
-//        fileList.add(fileDto1);
-//        fileList.add(fileDto2);
         SseEmitter emitter = new SseEmitter();
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.execute(() -> {
@@ -169,31 +159,4 @@ public class FileServiceImpl implements FileService {
         String email = AuthorizationUtils.getUserEmail();
         return customerRepository.findByEmail(email).get(0);
     }
-
-    private List<FileDto> updateFiles(ArrayList<FileDto> fileList) {
-        fileList.forEach(file -> {
-            file.setDownloadedSize(Math.min(file.getFileSize(),
-                generateRandomIntegerInRange(file.getDownloadedSize(), file.getFileSize())));
-            file.setProgress(calculatePercentage(file.getDownloadedSize(),file.getFileSize()));
-        });
-
-        return fileList;
-    }
-
-    private int calculateProgress(int downloadedData,int totalData){
-        if (totalData == 0) {
-            return 0; // Avoid division by zero
-        }
-
-        double progressPercentage = (downloadedData * 100.0) / totalData;
-        return (int) progressPercentage;
-    }
-
-    private Long generateRandomIntegerInRange(long min, long max) {
-        long newMax = Math.min(min+5L, max);
-        Random random = new Random();
-        return random.nextLong(newMax) + min;
-    }
-
-
 }
