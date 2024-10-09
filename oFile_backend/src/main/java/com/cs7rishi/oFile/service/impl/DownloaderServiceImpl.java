@@ -9,6 +9,9 @@ import com.cs7rishi.oFile.utils.AuthorizationUtils;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -18,9 +21,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-
+import java.io.ByteArrayOutputStream;
 import static com.cs7rishi.oFile.utils.FileUtils.calculatePercentage;
 
 /**
@@ -47,6 +52,7 @@ public class DownloaderServiceImpl implements DownloaderService {
     @Override
     public void downloadFile(FileDto fileDto) throws OFileException {
         File file = createFilePath(fileDto);
+        System.out.println("File Path " + file.getAbsolutePath());
         progressCacheService.initiateProgress(fileDto.getId());
         executorService.submit(() -> {
             startDownload(fileDto, file);
@@ -60,34 +66,84 @@ public class DownloaderServiceImpl implements DownloaderService {
 
     }
 
-    private void startDownload(FileDto fileDto, File file){
-        System.out.println(Thread.currentThread().getName());
-        try{
-            ReadableByteChannel readChannel = Channels.newChannel(generateUrl(fileDto).openStream());
+    private void startDownload(FileDto fileDto, File file) {
+        try {
+            S3Client s3Client = S3Client.builder().build(); // Create an S3 client
+            String bucketName = "ofile.cs7rishi.me";
+            String key = file.getName();
+
+            // Initiate a multipart upload
+            CreateMultipartUploadRequest createMultipartUploadRequest =
+                CreateMultipartUploadRequest.builder().bucket(bucketName).key(key).build();
+            CreateMultipartUploadResponse createMultipartUploadResponse =
+                s3Client.createMultipartUpload(createMultipartUploadRequest);
+            String uploadId = createMultipartUploadResponse.uploadId();
+
+            ReadableByteChannel readChannel =
+                Channels.newChannel(generateUrl(fileDto).openStream());
             FileOutputStream outputStream = new FileOutputStream(file);
             FileChannel writeChannel = outputStream.getChannel();
 
-            ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+            ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024); // 1 MB buffer for reading
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
             long totalBytesRead = 0;
+            int partNumber = 1;
+            List<CompletedPart> completedParts = new ArrayList<>();
 
-            while(readChannel.read(buffer) != -1){
-                totalBytesRead+= buffer.position();
-                updateDownloadProgress(fileDto,totalBytesRead);
-
+            while (readChannel.read(buffer) != -1) {
                 buffer.flip();
-                writeChannel.write(buffer);
+                byte[] data = new byte[buffer.remaining()];
+                buffer.get(data);
+                baos.write(data);
+                writeChannel.write(ByteBuffer.wrap(data));
                 buffer.clear();
 
-                Thread.sleep(100);
+                totalBytesRead += data.length;
+                updateDownloadProgress(fileDto, totalBytesRead);
+
+                // If we've accumulated at least 5 MB, upload the part
+                if (baos.size() >= 5 * 1024 * 1024) {
+                    uploadPart(s3Client, bucketName, key, uploadId, partNumber, baos.toByteArray(),
+                        completedParts);
+                    partNumber++;
+                    baos.reset();
+                }
             }
+
+            // Upload any remaining data as the final part
+            if (baos.size() > 0) {
+                uploadPart(s3Client, bucketName, key, uploadId, partNumber, baos.toByteArray(),
+                    completedParts);
+            }
+
+            // Complete the multipart upload
+            CompletedMultipartUpload completedMultipartUpload =
+                CompletedMultipartUpload.builder().parts(completedParts).build();
+            CompleteMultipartUploadRequest completeMultipartUploadRequest =
+                CompleteMultipartUploadRequest.builder().bucket(bucketName).key(key)
+                    .uploadId(uploadId).multipartUpload(completedMultipartUpload).build();
+            s3Client.completeMultipartUpload(completeMultipartUploadRequest);
+
             persistProgressInDB(fileDto);
             outputStream.close();
             readChannel.close();
             writeChannel.close();
-            System.out.println("FileId: " + fileDto.getId() + " Download Completed ");
+            System.out.println(
+                "FileId: " + fileDto.getId() + " Download Completed and uploaded to S3");
         } catch (Exception ex) {
             System.out.println("Exception Occurred: " + ex.getMessage());
         }
+    }
+
+    private void uploadPart(S3Client s3Client, String bucketName, String key, String uploadId,
+        int partNumber, byte[] data, List<CompletedPart> completedParts) {
+        UploadPartRequest uploadPartRequest =
+            UploadPartRequest.builder().bucket(bucketName).key(key).uploadId(uploadId)
+                .partNumber(partNumber).build();
+        UploadPartResponse uploadPartResponse =
+            s3Client.uploadPart(uploadPartRequest, RequestBody.fromBytes(data));
+        completedParts.add(
+            CompletedPart.builder().partNumber(partNumber).eTag(uploadPartResponse.eTag()).build());
     }
 
     private void persistProgressInDB(FileDto fileDto) {
