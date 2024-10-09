@@ -5,21 +5,18 @@ import com.cs7rishi.oFile.entity.FileEntity;
 import com.cs7rishi.oFile.exception.OFileException;
 import com.cs7rishi.oFile.repository.FileRepository;
 import com.cs7rishi.oFile.service.DownloaderService;
-import com.cs7rishi.oFile.utils.AuthorizationUtils;
-import jakarta.annotation.PostConstruct;
+import com.cs7rishi.oFile.utils.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,21 +30,25 @@ import static com.cs7rishi.oFile.utils.FileUtils.calculatePercentage;
  */
 @Service
 public class DownloaderServiceImpl implements DownloaderService {
+    @Value("${oFile.s3.bucketName}")
+    private String bucketName;
     @Autowired
     private ExecutorService executorService;
     @Autowired
     private FileRepository fileRepository;
     @Autowired
     private DownloadProgressCacheService progressCacheService;
-    private final String DOWNLOAD_DIR = "D:\\downloads";
+//    private final String DOWNLOAD_DIR = "D:\\downloads";
     private final int BUFFER_SIZE = 1024;
+    private final int MB = 1024 * 1024;
 
-
-    @PostConstruct
-    private void createDownloadDirectory() {
-        File file = new File(DOWNLOAD_DIR);
-        System.out.println("Download directory created : " + file.mkdirs());
-    }
+//
+//    @PostConstruct
+//    private void createDownloadDirectory() {
+//        File file = new File(DOWNLOAD_DIR);
+//        //Todo if strategy is AWS, then it should not run
+//        System.out.println("Download directory created : " + file.mkdirs());
+//    }
 
     @Override
     public void downloadFile(FileDto fileDto){
@@ -79,10 +80,10 @@ public class DownloaderServiceImpl implements DownloaderService {
 
             ReadableByteChannel readChannel =
                 Channels.newChannel(generateUrl(fileDto).openStream());
-            FileOutputStream outputStream = new FileOutputStream(file);
-            FileChannel writeChannel = outputStream.getChannel();
+//            FileOutputStream outputStream = new FileOutputStream(file);
+//            FileChannel writeChannel = outputStream.getChannel();
 
-            ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024); // 1 MB buffer for reading
+            ByteBuffer buffer = ByteBuffer.allocate(MB); // 1 MB buffer for reading
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             long totalBytesRead = 0;
             int partNumber = 1;
@@ -93,14 +94,14 @@ public class DownloaderServiceImpl implements DownloaderService {
                 byte[] data = new byte[buffer.remaining()];
                 buffer.get(data);
                 baos.write(data);
-                writeChannel.write(ByteBuffer.wrap(data));
+//                writeChannel.write(ByteBuffer.wrap(data));
                 buffer.clear();
 
                 totalBytesRead += data.length;
                 updateDownloadProgress(fileDto, totalBytesRead);
 
                 // If we've accumulated at least 5 MB, upload the part
-                if (baos.size() >= 5 * 1024 * 1024) {
+                if (baos.size() >= 5 * MB) {
                     uploadPart(s3Client, bucketName, key, uploadId, partNumber, baos.toByteArray(),
                         completedParts);
                     partNumber++;
@@ -123,9 +124,9 @@ public class DownloaderServiceImpl implements DownloaderService {
             s3Client.completeMultipartUpload(completeMultipartUploadRequest);
 
             persistProgressInDB(fileDto);
-            outputStream.close();
+//            outputStream.close();
             readChannel.close();
-            writeChannel.close();
+//            writeChannel.close();
             System.out.println(
                 "FileId: " + fileDto.getId() + " Download Completed and uploaded to S3");
         } catch (Exception ex) {
@@ -152,28 +153,10 @@ public class DownloaderServiceImpl implements DownloaderService {
         });
     }
 
-    private URL generateUrl(FileDto fileModel) throws MalformedURLException{
-        return new URL(fileModel.getFileUrl());
+    private URL generateUrl(FileDto fileDto) throws MalformedURLException{
+        return new URL(fileDto.getFileUrl());
     }
 
-    private File createFilePath(FileDto fileDto) throws OFileException {
-        File filePath = null;
-        try {
-            filePath = new File(getUserDirectory(), String.valueOf(fileDto.getId()));
-            if (!filePath.exists()) {
-                filePath.createNewFile();
-            }
-        } catch (Exception ex) {
-            throw new OFileException("Unable to create new file");
-        }
-        return filePath;
-    }
-
-    private File getUserDirectory(){
-        File file = new File(DOWNLOAD_DIR, AuthorizationUtils.getUserEmail());
-        file.mkdir();
-        return file;
-    }
 
     private void updateDownloadProgress(FileDto fileDto, long bytesRead) {
         progressCacheService.setFileProgress(fileDto.getId(),
