@@ -11,5 +11,5 @@ public interface FileService {
     GenericResponse<?> delete(Long fileId);
     GenericResponse<?> list();
     SseEmitter stream(StreamRequest streamRequest);
-
+    GenericResponse<?> downloadFile(Long fileId);
 }

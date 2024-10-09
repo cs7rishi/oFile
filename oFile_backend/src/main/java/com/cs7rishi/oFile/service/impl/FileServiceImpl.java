@@ -15,6 +15,7 @@ import com.cs7rishi.oFile.service.FileService;
 import com.cs7rishi.oFile.utils.ApiResponseUtil;
 import com.cs7rishi.oFile.utils.AuthorizationUtils;
 import com.cs7rishi.oFile.utils.FileUtils;
+import com.cs7rishi.oFile.utils.S3Utils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +36,10 @@ import static com.cs7rishi.oFile.utils.FileUtils.convertMBtoBytes;
 public class FileServiceImpl implements FileService {
     @Value("${oFile.fileSizeLimit}")
     private long fileSizeLimitMB;
+    @Value("${oFile.s3.bucketName}")
+    private String bucketName;
+    @Value("${oFile.s3.urlExpirationHour}")
+    private Integer urlExpirationHours;
     @Autowired
     CustomerRepository customerRepository;
     @Autowired
@@ -102,6 +107,15 @@ public class FileServiceImpl implements FileService {
             }
         });
         return emitter;
+    }
+
+    @Override
+    public GenericResponse<?> downloadFile(Long fileId) {
+        FileEntity fileEntity = fileRepository.findById(fileId).get();
+        return ApiResponseUtil.success(
+            S3Utils.createPresignedGetUrl(bucketName, FileUtils.createS3Key(fileId),
+                urlExpirationHours, fileEntity.getFileName()), ResponseConstant.EMPTY,
+            ResponseConstant.EMPTY);
     }
 
     private StreamResponse createStreamResponse(StreamRequest streamRequest){

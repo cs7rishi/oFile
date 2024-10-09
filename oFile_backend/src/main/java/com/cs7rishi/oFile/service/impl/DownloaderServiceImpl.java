@@ -50,12 +50,11 @@ public class DownloaderServiceImpl implements DownloaderService {
     }
 
     @Override
-    public void downloadFile(FileDto fileDto) throws OFileException {
-        File file = createFilePath(fileDto);
-        System.out.println("File Path " + file.getAbsolutePath());
+    public void downloadFile(FileDto fileDto){
+        String s3Key = FileUtils.createS3Key(fileDto.getId());
         progressCacheService.initiateProgress(fileDto.getId());
         executorService.submit(() -> {
-            startDownload(fileDto, file);
+            startDownload(fileDto, s3Key);
         });
     }
 
@@ -66,12 +65,11 @@ public class DownloaderServiceImpl implements DownloaderService {
 
     }
 
-    private void startDownload(FileDto fileDto, File file) {
+    private void startDownload(FileDto fileDto, String key) {
         try {
             S3Client s3Client = S3Client.builder().build(); // Create an S3 client
-            String bucketName = "ofile.cs7rishi.me";
-            String key = file.getName();
-
+//            String key = file.getAbsolutePath();
+            System.out.println("Key created: " + key);
             // Initiate a multipart upload
             CreateMultipartUploadRequest createMultipartUploadRequest =
                 CreateMultipartUploadRequest.builder().bucket(bucketName).key(key).build();
