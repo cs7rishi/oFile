@@ -26,4 +26,10 @@ public class LoginController {
         return ApiResponseUtil.success(null, ResponseConstant.LOGIN_SUCCESSFUL,
             ResponseConstant.EMPTY);
     }
+
+    @GetMapping(value = "/health", produces = MediaType.APPLICATION_JSON_VALUE)
+    public GenericResponse<?> healthCheck() {
+        return ApiResponseUtil.success(null, "OK", "Healthy");
+    }
+
 }
