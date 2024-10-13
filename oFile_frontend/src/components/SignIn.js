@@ -27,9 +27,11 @@ export const SignIn = () => {
         setStorage(Constants.AUTHORIZATION, response.headers.get(Constants.AUTHORIZATION))
         triggerNotification(data.response)
         navigate("/dashboard/downloads")
+      }else{
+        toast.error(Constants.INVALID_CRENDENTIALS)
       }
     } catch (error) {
-      toast.error("Something went Wrong!");
+      toast.error(Constants.SERVER_ERROR);
     }
   }
 
