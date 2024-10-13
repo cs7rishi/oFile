@@ -2,6 +2,7 @@ export const URLConstants = {
     BASE_URL : "http://localhost:8080",
     LOGIN_ENDPOINT : "/public/login",
     FILES_LIST_ENDPOINT: "/file/list",
-    FILES_STATUS_ENDPOINT: "/file/status",
-    FILE_ADD_ENDPOINT: "/file/add"
+    FILES_STREAM_ENDPOINT: "/file/stream",
+    FILE_ADD_ENDPOINT: "/file/add",
+    FILE_DOWNLOAD_ENDPOINT: "/file/download?"
 }

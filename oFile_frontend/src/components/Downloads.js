@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { URLConstants } from '../constants/URLConstants';
 import { File } from './File';
 import { Description, Dialog, DialogPanel, DialogTitle } from '@headlessui/react'
@@ -7,7 +7,10 @@ import { getStorage } from '../utils';
 import { Constants } from '../constants';
 
 export const Downloads = () => {
-  const [files, setFile] = useState([]);
+  const [files, setFiles] = useState([]);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [downloadingFiles, setDownloadingFiles] = useState([]);
+  const [progressMap, setProgressMap] = useState(new Map());
   let [isOpen, setIsOpen] = useState(false)
 
   const handleFileAdd = async e => {
@@ -36,9 +39,20 @@ export const Downloads = () => {
         });
 
         if (response.ok) {
+          const data = await response.json()
+          console.log(data)
           setIsOpen(false);
+          console.log("Before File Add Handler " + downloadingFiles)
+          let newDownloadingArray = [...downloadingFiles,data.data.id];
+          setDownloadingFiles(newDownloadingArray);
+          console.log("AfterFile Add Handler " + downloadingFiles)
+          console.log(downloadingFiles);
+
+          let newFilesArray = [data.data, ...files];
+          setFiles(newFilesArray);
+
           toast.success("File added successfully");
-        }else{
+        } else {
           toast.error("Something went wrong")
         }
       }
@@ -47,41 +61,108 @@ export const Downloads = () => {
     }
   }
 
-  useEffect(() => {
-    console.log("component has loaded");
-    const fetchUserFiles = async () => {
-      console.log("fetchuserFiles is triggered");
-      try {
-        let authorization = sessionStorage.getItem('Authorization');
-        if (authorization === null || authorization === undefined) {
-          alert('The property is not found in local storage.');
-        } else {
-          const response = await fetch(URLConstants.BASE_URL + URLConstants.FILES_LIST_ENDPOINT, {
-            method: 'GET',
-            headers: {
-              Authorization: `${authorization}`,
-            },
-          });
+  const fetchFiles = useCallback(async () => {
+    try {
+      let authorization = sessionStorage.getItem('Authorization');
+      if (authorization === null || authorization === undefined) {
+        alert('The property is not found in local storage.');
+      } else {
+        const response = await fetch(URLConstants.BASE_URL + URLConstants.FILES_LIST_ENDPOINT, {
+          method: 'GET',
+          headers: {
+            Authorization: `${authorization}`,
+          },
+        });
 
-          if (response.ok) {
-            const data = await response.json()
-            setFile(data);
-            console.log(data);
-          }
+        if (response.ok) {
+          const data = await response.json()
+          console.log(data);
+          setFiles(data.data);
+          console.log("Before Fetching Files " + downloadingFiles)
+          const filteredData = data.data.filter(item => item.progress !== 100).map(item => item.id);
+          //Todo check here what should be the case
+          // let newDownloadingArray = [filteredData, ...downloadingFiles]
+          setDownloadingFiles(filteredData);
+          console.log("After Fetching Files " + downloadingFiles)
         }
-      } catch (error) {
-        console.log(error)
       }
+    } catch (error) {
+      console.log(error)
     }
-    fetchUserFiles();
-  }, []);
+  }, [])
+
+  let eventSource;
+  const startStreaming = () => {
+    if(downloadingFiles.length === 0){
+      console.log("Nothing to stream for");
+      return;
+    }
+    console.log("Starting Stream")
+    setIsStreaming(true);
+    console.log(eventSource);
+    if (eventSource != null || eventSource != undefined) {
+
+      eventSource.close();
+    }
+    let sseUrl = URLConstants.BASE_URL + URLConstants.FILES_STREAM_ENDPOINT + `?ids=${downloadingFiles.join(',')}`;
+    eventSource = new EventSource(sseUrl);
+    eventSource.onopen = (msg) => {
+      console.log(msg);
+    }
+    eventSource.onmessage = (event) => {
+      const parsedData = JSON.parse(event.data)
+      console.log(parsedData);
+      const mp = new Map()
+      parsedData.files.forEach((file) => {
+        mp.set(file.id, file.progress);
+      })
+
+      files.forEach(file => {
+        if (mp.get(file.id) !== undefined) {
+          file.progress = mp.get(file.id);
+        }
+      })
+      setFiles([...files])
+      console.log("Before 100% filtering " +downloadingFiles)
+      let newdownloadingArray = downloadingFiles.filter((id) => (mp.get(id) !== undefined && mp.get(id) != 100));
+      if(downloadingFiles.length !== newdownloadingArray.length){
+        setDownloadingFiles(newdownloadingArray)
+      }
+      console.log("After 100% filtering " +downloadingFiles)
+    }
+    eventSource.onerror = (error) => {
+      console.error('EventSource failed:', error);
+      console.log("Streaming stopped " + isStreaming)
+      setIsStreaming(false);
+      eventSource.close();
+    };
+  }
+
+  useEffect(()=>{
+    console.log("useEffect: isStreaming Updated " + isStreaming)
+    if(isStreaming === false && downloadingFiles.length > 0){
+      console.log("Need to restart the streaming");  
+      console.log(downloadingFiles);
+      startStreaming();
+    }
+  },[isStreaming])
+
+  useEffect(() => {
+    console.log("useEffect: downloadingFiles updated " + downloadingFiles)
+    startStreaming();
+  }, [downloadingFiles])
+
+  useEffect(() => {
+    console.log("useEffect: Initial useEffect Triggered")
+    fetchFiles();
+  }, [fetchFiles]);
 
   return (
     <>
       <div className="action-container flex justify-end mb-4">
         <button onClick={() => setIsOpen(true)} className="block text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Add File</button>
         <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
-          <div className="fixed inset-0 flex flex-col w-screen items-center justify-center p-4">
+          <div className="fixed inset-0 flex flex-col w-screen items-center justify-center p-4 bg-black opacity-50">
             <div className="dialog-head flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Download New File
@@ -109,15 +190,6 @@ export const Downloads = () => {
                 Download
               </button>
             </form>
-            {/* <DialogPanel className="max-w-lg space-y-4 border bg-white p-12">
-              <DialogTitle className="font-bold">Deactivate account</DialogTitle>
-              <Description>This will permanently deactivate your account</Description>
-              <p>Are you sure you want to deactivate your account? All of your data will be permanently removed.</p>
-              <div className="flex gap-4">
-                <button onClick={() => setIsOpen(false)}>Cancel</button>
-                <button onClick={() => setIsOpen(false)}>Deactivate</button>
-              </div>
-            </DialogPanel> */}
           </div>
         </Dialog>
 
@@ -127,6 +199,9 @@ export const Downloads = () => {
       {/* {files && files.map((file,index) => (
         <File key={index} fileName={file.fileName} downloadedSize={file.downloadedSize} progress={file.progress} fileSize={file.fileSize}/>
       ))} */}
+      {files && files.map((file, index) => (
+        <File key={index} fileId = {file.id} fileName={file.fileName} downloadedSize={file.downloadedSize} progress={file.progress} fileSize={file.fileSize} />
+      ))}
     </>
   )
 }

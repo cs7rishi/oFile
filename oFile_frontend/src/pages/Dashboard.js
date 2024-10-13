@@ -3,11 +3,11 @@ import "../css/dashboard.css"
 export const Dashboard = ({ ChildComponent }) => {
   return (
     <>
-      <div className="dashboard-layout">
-        <div className="sidebar">
+      <div className="flex">
+        <div className="sidebar grow-0">
           <Sidebar />
         </div>
-        <div className="dashboard-content">
+        <div className="dashboard-content grow px-20">
           {ChildComponent && <ChildComponent />}
         </div>
       </div>

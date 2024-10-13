@@ -24,7 +24,6 @@ export const SignIn = () => {
       if (response.status === 200) {
         const data = await response.json();
         setStorage(Constants.AUTHORIZATION, response.headers.get(Constants.AUTHORIZATION))
-        console.log(data);
         triggerNotification(data.response)
         navigate("/dashboard")
       }
