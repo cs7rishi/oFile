@@ -7,7 +7,7 @@ export const Dashboard = ({ ChildComponent }) => {
         <div className="sidebar grow-0">
           <Sidebar />
         </div>
-        <div className="dashboard-content grow px-20">
+        <div className="dashboard-content grow px-20 pt-5">
           {ChildComponent && <ChildComponent />}
         </div>
       </div>
