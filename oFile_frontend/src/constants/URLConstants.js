@@ -1,5 +1,5 @@
 export const URLConstants = {
-    BASE_URL : "http://localhost:8080",
+    BASE_URL : process.env.REACT_APP_BACKEND_HOST,
     LOGIN_ENDPOINT : "/public/login",
     FILES_LIST_ENDPOINT: "/file/list",
     FILES_STREAM_ENDPOINT: "/file/stream",
