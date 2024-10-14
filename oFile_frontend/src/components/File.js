@@ -4,10 +4,17 @@ import { Constants, URLConstants } from '../constants';
 import toast from 'react-hot-toast';
 
 export const File = ({ fileId, fileName, downloadedSize, progress, fileSize, handleDelete }) => {
+  const calculateDownloadedBytes = (fileSize, progress)=>{
+    if(progress === 0) return 0;
+    // Ensure the fileSize is in bytes and the downloadedPercentage is a number between 0 and 100
+    if (fileSize > 0 && progress > 0) {
+      // Calculate the downloaded bytes
+      return (fileSize * progress) / 100;
+    }
+  }
 
-  console.log(fileId);
-  const bytesToMB = (bytes)=>{
-    return bytes / (1024 * 1024);
+  const bytesToMB = (bytes) => {
+    return (bytes / (1024 * 1024)).toFixed(2);
   }
   const handleFileDownload = async () => {
     try {
@@ -26,7 +33,6 @@ export const File = ({ fileId, fileName, downloadedSize, progress, fileSize, han
         if (response.ok) {
           const data = await response.json()
           window.open(data.data, "_blank");
-          console.log(data)
         } else {
           toast.error("Something went wrong")
         }
@@ -68,7 +74,10 @@ export const File = ({ fileId, fileName, downloadedSize, progress, fileSize, han
             </div>
             <div className="download-status w-full flex flex-row justify-between">
               <div className="file-size">
-                {`${bytesToMB(fileSize).toFixed(2)} MB`}
+                {progress !== 100 && (<span>{`${bytesToMB(calculateDownloadedBytes(fileSize,progress))} / `}</span>)}
+                <span>
+                  {`${bytesToMB(fileSize)} MB`}
+                </span>
               </div>
               {/* <div className="download-speed">
                 895MBps
