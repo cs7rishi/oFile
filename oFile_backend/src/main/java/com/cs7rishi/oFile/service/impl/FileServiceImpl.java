@@ -128,10 +128,8 @@ public class FileServiceImpl implements FileService {
             if (progress == 100) {
                 progressCacheService.deleteFileProgress(fileId);
             }
-            if (progress != -1) {
-                FileDto fileDto = FileDto.builder().id(fileId).progress(progress).build();
-                fileDtoList.add(fileDto);
-            }
+            FileDto fileDto = FileDto.builder().id(fileId).progress(progress).build();
+            fileDtoList.add(fileDto);
         });
         streamResponse.setFiles(fileDtoList);
         return streamResponse;
@@ -156,6 +154,7 @@ public class FileServiceImpl implements FileService {
 
     private boolean isFileSizeValid(FileDto fileDto) throws OFileException {
         long fileSize = FileUtils.getFileSize(fileDto);
+        fileDto.setFileSize(fileSize);//update file size in DTO
         return fileSize <= convertMBtoBytes(fileSizeLimitMB);
     }
 
