@@ -6,10 +6,12 @@ import com.cs7rishi.oFile.model.request.StreamRequest;
 import com.cs7rishi.oFile.model.response.GenericResponse;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.List;
+
 public interface FileService {
-    GenericResponse<?> add(FileDto fileDto) throws OFileException;
+    GenericResponse<FileDto> add(FileDto fileDto) throws OFileException;
     GenericResponse<?> delete(Long fileId);
-    GenericResponse<?> list();
+    GenericResponse<List<FileDto>> list();
     SseEmitter stream(StreamRequest streamRequest);
-    GenericResponse<?> downloadFile(Long fileId);
+    GenericResponse<String> downloadFile(Long fileId);
 }

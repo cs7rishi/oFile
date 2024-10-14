@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static com.cs7rishi.oFile.utils.FileUtils.calculatePercentage;
 import static com.cs7rishi.oFile.utils.FileUtils.convertMBtoBytes;
@@ -58,7 +59,7 @@ public class FileServiceImpl implements FileService {
      * @return Success or Failure Response
      */
     @Override
-    public GenericResponse<?> add(FileDto fileDto) throws OFileException {
+    public GenericResponse<FileDto> add(FileDto fileDto) throws OFileException {
         validateAndPersistFile(fileDto);
         downloaderService.downloadFile(fileDto);
         return ApiResponseUtil.success(fileDto, ResponseConstant.FILE_ADD_SUCCESS,
@@ -78,9 +79,9 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public GenericResponse<?> list() {
-        List<FileEntity> files = getFileForAuthenticatedUser();
-        return ApiResponseUtil.success(files,ResponseConstant.EMPTY,ResponseConstant.EMPTY);
+    public GenericResponse<List<FileDto>> list() {
+        return ApiResponseUtil.success(getFileForAuthenticatedUser(), ResponseConstant.EMPTY,
+            ResponseConstant.EMPTY);
     }
 
     @Override
@@ -110,7 +111,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public GenericResponse<?> downloadFile(Long fileId) {
+    public GenericResponse<String> downloadFile(Long fileId) {
         FileEntity fileEntity = fileRepository.findById(fileId).get();
         return ApiResponseUtil.success(
             S3Utils.createPresignedGetUrl(bucketName, FileUtils.createS3Key(fileId),
@@ -150,9 +151,7 @@ public class FileServiceImpl implements FileService {
     private void createAndSaveFile(FileDto fileDto){
         FileEntity fileEntity = createFileEntity(fileDto);
         fileEntity = fileRepository.save(fileEntity);
-        //Todo add a model mapper here
-        fileDto.setId(fileEntity.getId());
-        fileDto.setProgress(fileEntity.getProgress());
+        modelMapper.map(fileEntity, fileDto);
     }
 
     private boolean isFileSizeValid(FileDto fileDto) throws OFileException {
@@ -165,8 +164,11 @@ public class FileServiceImpl implements FileService {
         return FileDto.createEntity(fileDto, customer);
     }
 
-    private List<FileEntity> getFileForAuthenticatedUser(){
-        return fileRepository.findByCustomer(getAuthorisedCustomer());
+    private List<FileDto> getFileForAuthenticatedUser(){
+        List<FileEntity> fileEntityList = fileRepository.findByCustomer(getAuthorisedCustomer());
+        return fileEntityList.stream()
+            .map(fileEntity -> modelMapper.map(fileEntity,FileDto.class))
+            .collect(Collectors.toList());
     }
 
     private Customer getAuthorisedCustomer(){

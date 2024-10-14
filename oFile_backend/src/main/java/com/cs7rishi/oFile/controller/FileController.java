@@ -35,7 +35,7 @@ public class FileController {
     private String bucketName;
 
     @PostMapping("/add")
-    public GenericResponse<?> add(@RequestBody FileDto fileDto) throws OFileException {
+    public GenericResponse<FileDto> add(@RequestBody FileDto fileDto) throws OFileException {
         return fileService.add(fileDto);
     }
 
@@ -45,7 +45,7 @@ public class FileController {
     }
 
     @GetMapping("/list")
-    public GenericResponse<?> list(){
+    public GenericResponse<List<FileDto>> list(){
         return fileService.list();
     }
 
@@ -55,7 +55,7 @@ public class FileController {
     }
 
     @GetMapping("/download")
-    public GenericResponse<?> getDownloadLink(@RequestParam Long fileId){
+    public GenericResponse<String> getDownloadLink(@RequestParam Long fileId){
         return fileService.downloadFile(fileId);
     }
 }
