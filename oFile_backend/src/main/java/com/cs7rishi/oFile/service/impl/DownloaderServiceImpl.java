@@ -38,6 +38,7 @@ public class DownloaderServiceImpl implements DownloaderService {
     @Autowired
     private DownloadProgressCacheService progressCacheService;
     private final int MB = 1024 * 1024;
+    private final int DOWNLOAD_COMPLETE = 100;
 
     @Override
     public void downloadFile(FileDto fileDto){
@@ -118,7 +119,7 @@ public class DownloaderServiceImpl implements DownloaderService {
 
             persistProgressInDB(fileDto);
             readChannel.close();
-            setFileProgress(fileDto.getId(), 100);
+            setFileProgress(fileDto.getId(), DOWNLOAD_COMPLETE);
             System.out.println(
                 "FileId: " + fileDto.getId() + " Download Completed and uploaded to S3");
         } catch (Exception ex) {
