@@ -3,11 +3,11 @@ import { getStorage } from '../utils';
 import { Constants, URLConstants } from '../constants';
 import toast from 'react-hot-toast';
 
-export const File = ({ fileId, fileName, downloadedSize, progress, fileSize }) => {
+export const File = ({ fileId, fileName, downloadedSize, progress, fileSize, handleDelete }) => {
 
   console.log(fileId);
-  const handleDelete = async ()=>{
-    console.log(fileId + " to be deleted");
+  const bytesToMB = (bytes)=>{
+    return bytes / (1024 * 1024);
   }
   const handleFileDownload = async () => {
     try {
@@ -35,8 +35,6 @@ export const File = ({ fileId, fileName, downloadedSize, progress, fileSize }) =
       console.log(error)
     }
   }
-
-
   return (
     <>
       <div className="file-container flex items-center bg-alice-blue rounded-lg border border-gray-200 shadow-md p-4 mb-4">
@@ -52,11 +50,12 @@ export const File = ({ fileId, fileName, downloadedSize, progress, fileSize }) =
               {fileName}
             </div>
             <div className="file-action flex flex-row">
-              {progress !== 100 && (<svg onClick={handleDelete} className="w-6 h-6 text-red-700" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+              {progress !== 100 && (<span>{`${progress}%`}</span>)}
+              {/* {progress !== 100 && (<svg onClick={() => handleDelete(fileId)} className="w-6 h-6 text-red-700" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18 17.94 6M18 18 6.06 6" />
-              </svg>)}
-              {progress === 100 && (<svg onClick={handleDelete} class="w-6 h-6 text-red-700" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z" />
+              </svg>)} */}
+              {progress === 100 && (<svg onClick={() => handleDelete(fileId)} className="w-6 h-6 text-red-700" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z" />
               </svg>)}
               {progress === 100 && (<svg onClick={handleFileDownload} className="w-6 h-6 text-picton-blue" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4" />
@@ -69,11 +68,11 @@ export const File = ({ fileId, fileName, downloadedSize, progress, fileSize }) =
             </div>
             <div className="download-status w-full flex flex-row justify-between">
               <div className="file-size">
-                {`${downloadedSize} ${fileSize}`}
+                {`${bytesToMB(fileSize).toFixed(2)} MB`}
               </div>
-              <div className="download-speed">
+              {/* <div className="download-speed">
                 895MBps
-              </div>
+              </div> */}
             </div>
           </div>
 

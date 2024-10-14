@@ -4,5 +4,6 @@ export const URLConstants = {
     FILES_LIST_ENDPOINT: "/file/list",
     FILES_STREAM_ENDPOINT: "/file/stream",
     FILE_ADD_ENDPOINT: "/file/add",
+    FILE_DELETE_ENDPOINT: "/file/delete",
     FILE_DOWNLOAD_ENDPOINT: "/file/download?"
 }

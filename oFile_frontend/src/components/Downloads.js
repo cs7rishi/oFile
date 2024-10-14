@@ -12,6 +12,43 @@ export const Downloads = () => {
   const [downloadingFiles, setDownloadingFiles] = useState([]);
   let [isOpen, setIsOpen] = useState(false)
 
+  const handleFileDelete = async (fileId) => {
+    console.log(fileId + " to be deleted");
+    try {
+      let authorization = getStorage(Constants.AUTHORIZATION);
+      if (authorization === null || authorization === undefined) {
+        //Todo abstract the same to a hook
+        alert('The property is not found in local storage.');
+      } else {
+        const response = await fetch(URLConstants.BASE_URL + URLConstants.FILE_DELETE_ENDPOINT + `?fileId=${fileId}`, {
+          method: 'GET',
+          headers: {
+            "Authorization": `${authorization}`,
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (response.ok) {
+
+          const data = await response.json()
+          console.log(data)
+          if(data.response.status===200){
+            let newDownloadingArray = downloadingFiles.filter(id => id !== fileId);
+            setDownloadingFiles(newDownloadingArray);
+            let newFilesArray = files.filter(item => item.id !== fileId);
+            setFiles(newFilesArray);
+            toast.success("File deleted successfully");
+          }else{
+            toast.error("File could'nt be deleted")
+          }
+        } else {
+          toast.error("Something went wrong")
+        }
+      }
+    } catch (error) {
+      console.log(error)
+    } 
+  }
   const handleFileAdd = async e => {
     e.preventDefault();
     const fileName = e.target.fileName.value;
@@ -200,11 +237,8 @@ export const Downloads = () => {
 
       </div>
 
-      {/* {files && files.map((file,index) => (
-        <File key={index} fileName={file.fileName} downloadedSize={file.downloadedSize} progress={file.progress} fileSize={file.fileSize}/>
-      ))} */}
       {files && files.map((file, index) => (
-        <File key={index} fileId = {file.id} fileName={file.fileName} downloadedSize={file.downloadedSize} progress={file.progress} fileSize={file.fileSize} />
+        <File key={index} handleDelete={handleFileDelete} fileId = {file.id} fileName={file.fileName} downloadedSize={file.downloadedSize} progress={file.progress} fileSize={file.fileSize} />
       ))}
     </>
   )
