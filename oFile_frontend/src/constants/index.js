@@ -1,2 +1,2 @@
-export { Constants } from "./Constant"
+export { Constants } from "./Constants"
 export { URLConstants } from "./URLConstants"
