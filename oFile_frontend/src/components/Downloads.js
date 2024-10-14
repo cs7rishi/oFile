@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { URLConstants } from '../constants/URLConstants';
+import { URLConstants, Constants } from '../constants';
 import { File } from './File';
-import { Description, Dialog, DialogPanel, DialogTitle } from '@headlessui/react'
+import { Dialog } from '@headlessui/react'
 import toast from 'react-hot-toast';
 import { getStorage } from '../utils';
-import { Constants } from '../constants';
 
 export const Downloads = () => {
   const [files, setFiles] = useState([]);
@@ -13,7 +12,6 @@ export const Downloads = () => {
   let [isOpen, setIsOpen] = useState(false)
 
   const handleFileDelete = async (fileId) => {
-    console.log(fileId + " to be deleted");
     try {
       let authorization = getStorage(Constants.AUTHORIZATION);
       if (authorization === null || authorization === undefined) {
@@ -29,33 +27,26 @@ export const Downloads = () => {
         });
 
         if (response.ok) {
-
           const data = await response.json()
-          console.log(data)
-          if(data.response.status===200){
-            let newDownloadingArray = downloadingFiles.filter(id => id !== fileId);
-            setDownloadingFiles(newDownloadingArray);
-            let newFilesArray = files.filter(item => item.id !== fileId);
-            setFiles(newFilesArray);
+          if (data.response.status === 200) {
+            setDownloadingFiles(downloadingFiles.filter(id => id !== fileId));
+            setFiles(files.filter(item => item.id !== fileId));
             toast.success("File deleted successfully");
-          }else{
-            toast.error("File could'nt be deleted")
+          } else {
+            toast.error(data.response.msg)
           }
         } else {
-          toast.error("Something went wrong")
+          toast.error(Constants.SERVER_ERROR)
         }
       }
     } catch (error) {
       console.log(error)
-    } 
+    }
   }
   const handleFileAdd = async e => {
     e.preventDefault();
     const fileName = e.target.fileName.value;
     const fileUrl = e.target.fileUrl.value;
-
-    console.log(fileName + "  " + fileUrl);
-
     try {
       let authorization = getStorage(Constants.AUTHORIZATION);
       if (authorization === null || authorization === undefined) {
@@ -76,21 +67,12 @@ export const Downloads = () => {
 
         if (response.ok) {
           const data = await response.json()
-          console.log(data)
-          if(data.response.status===200){
-
+          if (data.response.status === 200) {
             setIsOpen(false);
-            console.log("Before File Add Handler " + downloadingFiles)
-            let newDownloadingArray = [...downloadingFiles,data.data.id];
-            setDownloadingFiles(newDownloadingArray);
-            console.log("AfterFile Add Handler " + downloadingFiles)
-            console.log(downloadingFiles);
-            
-            let newFilesArray = [data.data, ...files];
-            setFiles(newFilesArray);
-            
+            setDownloadingFiles([...downloadingFiles, data.data.id]);
+            setFiles([data.data, ...files]);
             toast.success("File added successfully");
-          }else{
+          } else {
             toast.error(data.response.msg)
           }
         } else {
@@ -99,7 +81,7 @@ export const Downloads = () => {
       }
     } catch (error) {
       console.log(error)
-    } 
+    }
   }
 
   const fetchFiles = useCallback(async () => {
@@ -117,14 +99,11 @@ export const Downloads = () => {
 
         if (response.ok) {
           const data = await response.json()
-          console.log(data);
           setFiles(data.data);
-          console.log("Before Fetching Files " + downloadingFiles)
           const filteredData = data.data.filter(item => item.progress !== 100).map(item => item.id);
           //Todo check here what should be the case
           // let newDownloadingArray = [filteredData, ...downloadingFiles]
           setDownloadingFiles(filteredData);
-          console.log("After Fetching Files " + downloadingFiles)
         }
       }
     } catch (error) {
@@ -134,68 +113,66 @@ export const Downloads = () => {
 
   let eventSource;
   const startStreaming = () => {
-    if(downloadingFiles.length === 0){
-      console.log("Nothing to stream for");
+    if (downloadingFiles.length === 0) {
       return;
     }
-    console.log("Starting Stream")
     setIsStreaming(true);
-    console.log(eventSource);
-    if (eventSource != null || eventSource != undefined) {
-
+    if (eventSource !== null && eventSource !== undefined) {
       eventSource.close();
     }
     let sseUrl = URLConstants.BASE_URL + URLConstants.FILES_STREAM_ENDPOINT + `?ids=${downloadingFiles.join(',')}`;
     eventSource = new EventSource(sseUrl);
     eventSource.onopen = (msg) => {
-      console.log(msg);
     }
     eventSource.onmessage = (event) => {
       const parsedData = JSON.parse(event.data)
-      console.log(parsedData);
       const mp = new Map()
       parsedData.files.forEach((file) => {
         mp.set(file.id, file.progress);
       })
 
       files.forEach(file => {
-        if (mp.get(file.id) !== undefined) {
+        //Check if file is downloading at backend or downloaded
+        if (mp.get(file.id) !== undefined && mp.get(file.id) !== -1) {
           file.progress = mp.get(file.id);
         }
       })
       setFiles([...files])
-      console.log("Before 100% filtering " +downloadingFiles)
-      let newdownloadingArray = downloadingFiles.filter((id) => (mp.get(id) !== undefined && mp.get(id) != 100));
-      if(downloadingFiles.length !== newdownloadingArray.length){
+      let newdownloadingArray = downloadingFiles.filter((id) => (mp.get(id) !== undefined && mp.get(id) !== 100 && mp.get(id) !== -1));
+      //It could happend, that downloading file remains same, no need to trigger rerender
+      if (downloadingFiles.length !== newdownloadingArray.length) {
         setDownloadingFiles(newdownloadingArray)
       }
-      console.log("After 100% filtering " +downloadingFiles)
     }
     eventSource.onerror = (error) => {
-      console.error('EventSource failed:', error);
-      console.log("Streaming stopped " + isStreaming)
       setIsStreaming(false);
       eventSource.close();
     };
   }
 
-  useEffect(()=>{
-    console.log("useEffect: isStreaming Updated " + isStreaming)
-    if(isStreaming === false && downloadingFiles.length > 0){
-      console.log("Need to restart the streaming");  
-      console.log(downloadingFiles);
+  const closeStreaming = ()=>{
+    if (eventSource !== null && eventSource !== undefined) {
+      eventSource.close();
+      console.log("Event Source Closed");
+    }
+  }
+
+  //Streaming could stop because of Time Out, restart SSE if files still downloading
+  useEffect(() => {
+    if (isStreaming === false && downloadingFiles.length > 0) {
       startStreaming();
     }
-  },[isStreaming])
+  }, [isStreaming])
 
   useEffect(() => {
-    console.log("useEffect: downloadingFiles updated " + downloadingFiles)
     startStreaming();
   }, [downloadingFiles])
 
   useEffect(() => {
-    console.log("useEffect: Initial useEffect Triggered")
     fetchFiles();
+    return ()=>{
+      closeStreaming();
+    }
   }, [fetchFiles]);
 
   return (
@@ -233,12 +210,9 @@ export const Downloads = () => {
             </form>
           </div>
         </Dialog>
-
-
       </div>
-
       {files && files.map((file, index) => (
-        <File key={index} handleDelete={handleFileDelete} fileId = {file.id} fileName={file.fileName} downloadedSize={file.downloadedSize} progress={file.progress} fileSize={file.fileSize} />
+        <File key={index} handleDelete={handleFileDelete} fileId={file.id} fileName={file.fileName} downloadedSize={file.downloadedSize} progress={file.progress} fileSize={file.fileSize} />
       ))}
     </>
   )
