@@ -1,5 +1,3 @@
-import { Constants } from "../constants/Constant";
-
 export const getStorage = (key) => {
     return window.sessionStorage.getItem(key)
 }
