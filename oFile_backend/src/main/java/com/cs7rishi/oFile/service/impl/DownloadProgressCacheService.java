@@ -13,7 +13,6 @@ public class DownloadProgressCacheService {
     }
 
     void setFileProgress(Long fileId, int progress) {
-        System.out.println(fileId + " : " + progress);
         fileProgressCache.put(fileId, progress);
     }
 
