@@ -100,7 +100,7 @@ public class FileServiceImpl implements FileService {
                         SseEmitter.event().data(streamResponse)
                             .id(String.valueOf(i)).name("message");
                     emitter.send(event);
-                    Thread.sleep(3000);
+                    Thread.sleep(1000);
                 }
                 emitter.complete();
             } catch (Exception ex) {
