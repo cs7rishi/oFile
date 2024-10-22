@@ -26,7 +26,7 @@ export const SignIn = () => {
         const data = await response.json();
         setStorage(Constants.AUTHORIZATION, response.headers.get(Constants.AUTHORIZATION))
         triggerNotification(data.response)
-        navigate("/dashboard/downloads")
+        navigate("/dashboard")
       }else{
         toast.error(Constants.INVALID_CRENDENTIALS)
       }

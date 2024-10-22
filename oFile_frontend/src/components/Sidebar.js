@@ -18,7 +18,7 @@ export const Sidebar = () => {
             <aside id="separator-sidebar" className="top-0 left-0 h-screen" aria-label="Sidebar">
                 <div className="h-full px-3 py-4 bg-picton-blue">
                     <ul className="space-y-2 font-medium">
-                        <li>
+                        {/* <li>
                             <Link to="/dashboard" className="flex items-center p-2 rounded-lg text-white hover:bg-violet-600">
                                 <svg className="flex-shrink-0 w-5 h-5 text-white-900 transition duration-75" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 21">
                                     <path d="M16.975 11H10V4.025a1 1 0 0 0-1.066-.998 8.5 8.5 0 1 0 9.039 9.039.999.999 0 0 0-1-1.066h.002Z" />
@@ -26,16 +26,16 @@ export const Sidebar = () => {
                                 </svg>
                                 <span className="ms-3 text-white-900">Dashboard</span>
                             </Link>
-                        </li>
+                        </li> */}
                         <li>
-                            <Link to="/dashboard/downloads" className="flex items-center p-2 rounded-lg text-white hover:bg-violet-600">
+                            <Link to="/dashboard" className="flex items-center p-2 rounded-lg text-white hover:bg-violet-600">
                                 <svg className="w-5 h-5 text-white-900 transition duration-75" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 21">
                                     <path d="M17 5.923A1 1 0 0 0 16 5h-3V4a4 4 0 1 0-8 0v1H2a1 1 0 0 0-1 .923L.086 17.846A2 2 0 0 0 2.08 20h13.84a2 2 0 0 0 1.994-2.153L17 5.923ZM7 9a1 1 0 0 1-2 0V7h2v2Zm0-5a2 2 0 1 1 4 0v1H7V4Zm6 5a1 1 0 1 1-2 0V7h2v2Z" />
                                 </svg>
-                                <span className="flex-1 ms-3 whitespace-nowrap">Downloads</span>
+                                <span className="flex-1 ms-3 whitespace-nowrap">Dashboard</span>
                             </Link>
                         </li>
-                        <li>
+                        {/* <li>
                             <Link to="/dashboard/upgrade" className="flex items-center p-2 rounded-lg text-white hover:bg-violet-600">
                                 <svg className="flex-shrink-0 w-5 h-5 text-white-900 transition duration-75" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 21">
                                     <path d="M7.958 19.393a7.7 7.7 0 0 1-6.715-3.439c-2.868-4.832 0-9.376.944-10.654l.091-.122a3.286 3.286 0 0 0 .765-3.288A1 1 0 0 1 4.6.8c.133.1.313.212.525.347A10.451 10.451 0 0 1 10.6 9.3c.5-1.06.772-2.213.8-3.385a1 1 0 0 1 1.592-.758c1.636 1.205 4.638 6.081 2.019 10.441a8.177 8.177 0 0 1-7.053 3.795Z" />
@@ -50,10 +50,10 @@ export const Sidebar = () => {
                                 </svg>
                                 <span className="ms-3">Profile</span>
                             </Link>
-                        </li>
-                    </ul>
-                    <ul className="pt-4 mt-4 space-y-2 font-medium border-t border-white">
-                        <li>
+                        </li> */}
+                    {/* </ul> */}
+                    {/* <ul className="pt-4 mt-4 space-y-2 font-medium border-t border-white"> */}
+                        {/* <li>
                             <Link to="/dashboard/setting" className="flex items-center p-2 rounded-lg text-white hover:bg-violet-600">
                                 <svg className="flex-shrink-0 w-5 h-5 text-white-900 transition duration-75" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
                                     <path d="M18 0H6a2 2 0 0 0-2 2h14v12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Z" />
@@ -61,7 +61,7 @@ export const Sidebar = () => {
                                 </svg>
                                 <span className="ms-3">Settings</span>
                             </Link>
-                        </li>
+                        </li> */}
 
                         <li>
                             <div onClick={logout} className="flex items-center p-2 rounded-lg text-white hover:bg-violet-600">
